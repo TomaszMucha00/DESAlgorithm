@@ -12,65 +12,25 @@ namespace DESAlgoritm
     {
         public static string plaintext;
         public static string key;
-        /*  BRUDNOPIS
-
-            Pytania:
-
-            1. Jaka część tablicy ASCII jest odzwierciedlana w algorytmie DES? Część alfanumeryczna, znaki specjalne, znaki sterujące?
-
-            Wnioski:
-
-            1. DES operuje na bitach, zasadniczo więc problemem nie jest jakie szyfrowanie zastosuje np. ASCII albo UTF8 bo tak właściwie mogę użyć DES
-               na ZIP albo DOC jeśli tylko będzie on w formie binarnej. Muszę w takim razie rozbić program w taki sposób aby początek algorytmu dostawał 
-               ciąg binarny. Co będzie wcześniej jest już sprawą osobną. Fragment z ASCII jest poprawny aczkolwiek nie powinien znajdować sie w samej klasie DES
-               jako element nieistotny dla samego algorytmu.
-
-            Problem:
-
-            1. Dlaczego tablica ASCII drukuje bin w formie dec
-
-               Ok, mam już odpowiednią funkcje. Tablica jako taka jest gotowa.
-
-            2. Przygotowanie odpowiedniej wiadomości 
-
-            Mam już stworzoną wiadomość w formie pełnej, docelowo mogę rozpocząć procedure algorytmy DES.
-
-            3. Permutacje - pomysł - stworzenie odpowiedniego operatora "Permutatora" który automatycznie będzie permutował macierz X przez macierz P dając X'
-
-            A BÓG RZEKŁ "TO JEST DOBRE" ^^
-
-            4. Permutator zrobiony i dopracowany. Całą konwersje z string na bit stream dało się załatwić w kilkunastu liniach. Zaczynam prace nad kluczami.
-
-            Mam już cząstkowe podklucze, teraz wystarczy je połączyć, stworzyć klucze i je przepermutować. Będzie już gotowe i będzie można zacząć pracować nad
-            nad siatką Feistel'a
-
-            Pierwsza w nocy, co ja tutaj robie... uuu... co Ty tutaj robisz... uuu...
-
-            Klucze są complit
-
-            Musze przerobić ciąg bitów np 11 na dec aby uzyskać coordy które wykorzystam w s-boxach
-
-
-         */
 
         public DES()
         {
             DESBegin();
             Keys();
-            //FeistelFunction(Table.KeyBin,1);
+            DESCycle();
         }
 
         //Początek działania programu
         public static void DESBegin()
         {
-            //Console.Write("Podaj wiadomosc do zakodowania: ");
-            //plaintext = Console.ReadLine();
-            plaintext = "KOT";
+            Console.Write("Podaj wiadomosc do zakodowania: ");
+            plaintext = Console.ReadLine();
+            //plaintext = "KOT";
             int[] temp = Array.ConvertAll<char,int>(StringToBitStream(plaintext).ToCharArray(), element=>(int)element-48);
             Table.plainTextBin = new PermutationMatrix(temp);
             //Console.Write("Podaj klucz: ");
             //plaintext = Console.ReadLine();
-            key = "1000000000000000000000000000000000000000000000000000000000000001";
+            key = "0001001100110100010101110111100110011011101111001101111111110001";
             temp = Array.ConvertAll<char, int>(key.ToCharArray(), element => (int)element - 48);
             Table.KeyBin = new PermutationMatrix(temp);
         }
@@ -173,17 +133,19 @@ namespace DESAlgoritm
 
         }
 
-        public static void DESCycle()
+        public static int[] DESCycle()
         {
+            int[] tempo = new int[] { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1 };
+            Table.plainTextBin.matrix = tempo;
             Table.plainTextBin = Table.plainTextBin * Table.IP;
             Table.L[0] = new PermutationMatrix(new int[32]);
             Table.R[0] = new PermutationMatrix(new int[32]);
             for (int i = 0; i < 32; i++)
             {
                 Table.L[0].matrix[i] = Table.plainTextBin.matrix[i];
-                Table.R[0].matrix[i] = Table.plainTextBin.matrix[i+32];
+                Table.R[0].matrix[i] = Table.plainTextBin.matrix[i + 32];
             }
-            for (int i = 1; i < 15; i++)
+            for (int i = 1; i < 16; i++)
             {
                 Table.L[i] = new PermutationMatrix(new int[32]);
                 Table.R[i] = new PermutationMatrix(new int[32]);
@@ -193,7 +155,25 @@ namespace DESAlgoritm
                     Table.R[i].matrix[j] = (Table.L[i].matrix[j] + Table.Keys[i].matrix[j]) % 2;
                 }
             }
+            int[] temp = new int[32];
+            temp = Table.R[15].matrix;
+            Table.R[15].matrix = Table.L[15].matrix;
+            Table.L[15].matrix = temp;
 
+            for (int i = 0; i < 32; i++)
+            {
+                Table.plainTextBin.matrix[i] = Table.R[15].matrix[i];
+                Table.plainTextBin.matrix[i+32] = Table.L[15].matrix[i];
+            }
+
+            Table.plainTextBin = Table.plainTextBin * Table.FP;
+            string answer = "";
+            foreach (var item in Table.plainTextBin.matrix)
+            {
+                answer += item.ToString();
+            }
+            Console.WriteLine("Encripted message: " + answer);
+            return Table.plainTextBin.matrix;
         }
 
         public static PermutationMatrix FeistelFunction(PermutationMatrix R, int cycle)
@@ -204,12 +184,12 @@ namespace DESAlgoritm
             {
                 FeistelMatrix.matrix[i] = (FeistelMatrix.matrix[i] + Table.Keys[cycle].matrix[i]) % 2;
             }
-            FeistelMatrix = SBox(FeistelMatrix, cycle);
+            FeistelMatrix = SBox(FeistelMatrix);
             FeistelMatrix = FeistelMatrix * Table.P;
             return FeistelMatrix;
         }
 
-        public static PermutationMatrix SBox(PermutationMatrix M, int cycle)
+        public static PermutationMatrix SBox(PermutationMatrix M)
         {
             int[] Coordinates = new int[16];
             for (int i = 0; i < M.matrix.Length; i+=6)
@@ -220,7 +200,7 @@ namespace DESAlgoritm
             int[] resoults = new int[8];
             for (int i = 0; i < Coordinates.Length; i+=2)
             {
-                resoults[i/2] = Table.S[cycle][Coordinates[i], Coordinates[i+1]];
+                resoults[i/2] = Table.S[i/2][Coordinates[i], Coordinates[i+1]];
             }
             string temp = "";
             foreach (var item in resoults)
