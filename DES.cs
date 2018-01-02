@@ -15,22 +15,22 @@ namespace DESAlgoritm
 
         public DES()
         {
-            DESBegin();
+            DESBegin("","");
             Keys();
             DESCycle();
         }
 
         //Początek działania programu
-        public static void DESBegin()
+        public static void DESBegin(string plaintext, string key)
         {
-            Console.Write("Podaj wiadomosc do zakodowania: ");
-            plaintext = Console.ReadLine();
+            //Console.Write("Podaj wiadomosc do zakodowania: ");
+            //plaintext = //Console.ReadLine();
             //plaintext = "KOT";
             int[] temp = Array.ConvertAll<char,int>(StringToBitStream(plaintext).ToCharArray(), element=>(int)element-48);
             Table.plainTextBin = new PermutationMatrix(temp);
             //Console.Write("Podaj klucz: ");
-            //plaintext = Console.ReadLine();
-            key = "0001001100110100010101110111100110011011101111001101111111110001";
+            //plaintext = //Console.ReadLine();
+            //key = "0001001100110100010101110111100110011011101111001101111111110001";
             temp = Array.ConvertAll<char, int>(key.ToCharArray(), element => (int)element - 48);
             Table.KeyBin = new PermutationMatrix(temp);
         }
@@ -98,7 +98,7 @@ namespace DESAlgoritm
                 {
                     temp += item2.ToString();
                 }
-                Console.WriteLine(counter-1 + " " + temp + "\n");
+                //Console.WriteLine(counter-1 + " " + temp + "\n");
             }
             counter = 0;
             foreach (var item in Table.D)
@@ -109,7 +109,7 @@ namespace DESAlgoritm
                 {
                     temp += item2.ToString();
                 }
-                Console.WriteLine(counter-1 + " " + temp + "\n");
+                //Console.WriteLine(counter-1 + " " + temp + "\n");
             }
 
             for (int i = 0; i < 16; i++)
@@ -128,15 +128,14 @@ namespace DESAlgoritm
                 {
                     temp += item2.ToString();
                 }
-                Console.WriteLine(counter + " " + temp + "\n");
+                //Console.WriteLine(counter + " " + temp + "\n");
             }
 
         }
 
+        //Glowny cykl 
         public static int[] DESCycle()
         {
-            int[] tempo = new int[] { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1 };
-            Table.plainTextBin.matrix = tempo;
             Table.plainTextBin = Table.plainTextBin * Table.IP;
             Table.L[0] = new PermutationMatrix(new int[32]);
             Table.R[0] = new PermutationMatrix(new int[32]);
@@ -172,10 +171,11 @@ namespace DESAlgoritm
             {
                 answer += item.ToString();
             }
-            Console.WriteLine("Encripted message: " + answer);
+            //Console.WriteLine("Encripted message: " + answer);
             return Table.plainTextBin.matrix;
         }
 
+        //Siatka Feistel'a
         public static PermutationMatrix FeistelFunction(PermutationMatrix R, int cycle)
         {
             PermutationMatrix FeistelMatrix = R;
@@ -189,6 +189,7 @@ namespace DESAlgoritm
             return FeistelMatrix;
         }
 
+        //Procedura SBox
         public static PermutationMatrix SBox(PermutationMatrix M)
         {
             int[] Coordinates = new int[16];
